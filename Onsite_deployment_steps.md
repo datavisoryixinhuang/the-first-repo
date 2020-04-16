@@ -123,13 +123,16 @@ ansible 2.9.6
 However, after re-install this, I still met error on running code (1), here is the part of outcome:
 
 ```shell
+fatal: [10.201.33.67]: FAILED! => {"msg": "The task includes an option with an undefined variable. The error was: 'ansible.vars.hostvars.HostVarsVars object' has no attribute 'ansible_hostname'\n\nThe error appears to be in '/packages/onsite-ansible-docker/roles/bootstrap/tasks/main.yml': line 55, column 3, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n\n- name: Remove 127.0.0.1 mapping to hostname\n  ^ here\n"}
+fatal: [10.201.42.238]: FAILED! => {"msg": "The task includes an option with an undefined variable. The error was: 'ansible.vars.hostvars.HostVarsVars object' has no attribute 'ansible_hostname'\n\nThe error appears to be in '/packages/onsite-ansible-docker/roles/bootstrap/tasks/main.yml': line 55, column 3, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n\n- name: Remove 127.0.0.1 mapping to hostname\n  ^ here\n"}
+
 PLAY RECAP *****************************************************************************
 10.201.33.67   : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=3
 10.201.34.192  : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
 10.201.42.238  : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=3
 ```
 
-**To be fixed...**
+**To be checked out...**
 
 
 
