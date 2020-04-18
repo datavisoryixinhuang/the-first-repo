@@ -103,13 +103,11 @@ There would be a *base_config.ini* file generated in the current directory.
 
 I met the some errors when trying to execute the 
 
-`ansible-playbook playbooks/bootstrap.yml --private-key=/path/of/your/private/key` (1)
+`ansible-playbook playbooks/bootstrap.yml --private-key=~/.ssh/id_rsa` (1)
 
 Then **Chaoqun Huang** found that the ansible may not be installed correctly. Then we re-install it by running the following command
 
 ```shell
-# code to install
-$ yum install ansible
 
 $ ansible --version
 ansible 2.9.6
@@ -132,7 +130,114 @@ PLAY RECAP *********************************************************************
 10.201.42.238  : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=3
 ```
 
-**To be checked out...**
+**According form Chang Liu, it is the hosts file that causes this error, so I checked the host file as following on onsite1**
+
+`vim /etc/hosts`
+
+```
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+10.201.33.67 onsite1
+10.201.34.192 onsite2
+10.201.42.238 onsite3
+```
+
+**Chang** said:
+
+>哦哦 这步 应该是想要保持，中控机的 cat /etc/hosts 里对应的" ip  hostname" ，和每台机器上的hostname 是否一致。
+>因为有些组件，例如HDFS，会有这样的映射，hdfs-datanode，他会去的对应hostname 和 ip。
+>
+>如果实际操作 我们一般会把master机器 /etc/hosts 里，手动把所有机器都列进去
+>ip1	datavisor-server0001
+>ip2 datavisor-server0002
+>ip3 datavisor-server0003
+>.
+>.
+>.
+>
+>这样。
+>也方便自己  ssh datavisor-server0002
+>
+>我们onsite training的环境里现在应该是这样哈：
+>ip1	onsite1
+>ip2 onsite2
+>ip3 onsite3
+
+So, after I tried to comment first 2 lines, it still failed with same error. Then I just deteled the first two line, and this is what looks like for /etc/hosts
+
+```
+10.201.33.67 onsite1
+10.201.34.192 onsite2
+10.201.42.238 onsite3
+```
+
+*I need to mentioned that I still met some errors on onsite2 machine, so I ssh to it form onsite1 and found there is a file that obviously should not be there under /datavisor. After I deleted it and back to onsite1, re-executed the command, it pops up some different errors*
+
+`ansible-playbook playbooks/bootstrap.yml --private-key=~/.ssh/id_rsa`
+
+```shell
+TASK [jdk8 : Set root directory] ************************************************************************************
+ok: [10.201.33.67]
+ok: [10.201.34.192]
+ok: [10.201.42.238]
+Friday 17 April 2020  07:52:42 +0000 (0:00:00.104)       0:00:21.599 **********
+
+TASK [jdk8 : Check if jdk exists] ***********************************************************************************
+ok: [10.201.33.67]
+ok: [10.201.42.238]
+ok: [10.201.34.192]
+Friday 17 April 2020  07:52:44 +0000 (0:00:01.211)       0:00:22.811 **********
+
+TASK [jdk8 : Ensure jdk base dir] ***********************************************************************************
+changed: [10.201.33.67]
+changed: [10.201.34.192]
+changed: [10.201.42.238]
+Friday 17 April 2020  07:52:45 +0000 (0:00:01.054)       0:00:23.866 **********
+
+TASK [jdk8 : Copy jdk to hosts] *************************************************************************************
+fatal: [10.201.33.67]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.26-68394309318502/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
+fatal: [10.201.34.192]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.29-182728417559723/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
+fatal: [10.201.42.238]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.32-147762919821206/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
+
+PLAY RECAP ********************************************************************************************
+10.201.33.67    : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
+10.201.34.192   : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
+10.201.42.238   : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
+
+Friday 17 April 2020  07:52:49 +0000 (0:00:04.371)       0:00:28.237 **********
+===============================================================================
+jdk8 : Copy jdk to hosts ---------------------------------------------------------------- 4.37s
+bootstrap : Remove 127.0.0.1 mapping to hostname ---------------------------------------- 3.24s
+bootstrap : Remove ipv6 ::1 mapping to hostname ----------------------------------------- 3.04s
+Gathering Facts ------------------------------------------------------------------------- 2.27s
+bootstrap : Disable firewalld ----------------------------------------------------------- 1.49s
+bootstrap : Disable SElinux ------------------------------------------------------------- 1.41s
+bootstrap : Create user ----------------------------------------------------------------- 1.37s
+bootstrap : Create datavisor dir -------------------------------------------------------- 1.25s
+bootstrap : Create group ---------------------------------------------------------------- 1.23s
+jdk8 : Check if jdk exists -------------------------------------------------------------- 1.21s
+bootstrap : Set DV_DIR environment parameter -------------------------------------------- 1.21s
+bootstrap : Update /etc/security/limits.conf -------------------------------------------- 1.19s
+bootstrap : Disable Enforcement --------------------------------------------------------- 1.17s
+bootstrap : Disable iptables ------------------------------------------------------------ 1.16s
+jdk8 : Ensure jdk base dir -------------------------------------------------------------- 1.05s
+bootstrap : Get hostname by shell ------------------------------------------------------- 1.03s
+jdk8 : Get root directory of the package ------------------------------------------------ 0.32s
+jdk8 : Set root directory --------------------------------------------------------------- 0.10s
+bootstrap : If hostname contains _, will rewrite hostname ------------------------------- 0.10s
+Playbook run took 0 days, 0 hours, 0 minutes, 28 seconds
+```
+
+As the error message says that  <font color=darksalmon>Command \"unzip\" not found.</font>, I install the **unzip** by:
+
+```shell
+$ sudo yum install unzip
+$ which gtar
+/usr/bin/gtar
+$ which unzip
+/usr/bin/unzip
+# however, I still met same error :(
+```
 
 
 
