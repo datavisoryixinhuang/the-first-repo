@@ -39,7 +39,7 @@ compres the file to get the new file: onsite-ansible-docker
 
 ## 3. Install Ansible
 
-Keep operating in onsite1 env.
+*Keep operating in onsite1 env.*
 
 **Some Operations may need sudo**
 
@@ -47,52 +47,26 @@ Keep operating in onsite1 env.
 $ tar -zxvf datavisor-onsite.tar.gz
 $ cd onsite-ansible-docker/
 $ tar -xzvf ansible-centos7.4.1708.tar.gz   # it works now
-$ cd ansible-centos7.4.1708
-$ sudo ./install.sh
+$ sudo yum install ansible # do this to install ansible
+$ cd ansible-centos7.4.1708 # skip & ignore this line due to the broken existed file
+$ sudo ./install.sh # skip & ignore this line due to the broken existed file
 $ ansible --version
-ansible 2.4.2.0
-  config file = /etc/ansible/ansible.cfg
+ansible 2.9.6 # 2020.04.19
+  config file = /packages/onsite-ansible-docker/ansible.cfg
   configured module search path = [u'/home/datavisor/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
   ansible python module location = /usr/lib/python2.7/site-packages/ansible
   executable location = /usr/bin/ansible
   python version = 2.7.5 (default, Oct 30 2018, 23:45:53) [GCC 4.8.5 20150623 (Red Hat 4.8.5-36)]
 ```
 
+**due to the space of /packages is not enough, we need to set the directory "/datavisor" under the /data**
+
 ## 4. Configure the environment
 
 ```shell
-# configure the env.
-$ ./generate_base_ha_config.py --help
-Usage: generate_base_ha_config.py [options]
-
-Generate ansible base config
-
-Options:
-  -h, --help            show this help message and exit
-  -d DATAVISOR_DIR, --datavisor-dir=DATAVISOR_DIR
-                        datavisor dir for data, docker root and scripts
-  -t CLIENT_NAME, --client-name=CLIENT_NAME
-                        client company name used to differ onsite deployment
-                        configs
-  -i IPS, --ips=IPS     ip list, seperated by comma. First ip will be the
-                        master
-  -m WORKER_MEMORY, --worker-memory=WORKER_MEMORY
-                        set how much total memory workers have to give
-                        executors
-  -c WORKER_CORES, --worker-cores=WORKER_CORES
-                        the number of cores to use on each spark slave node
-  -n NUMBER_WORKERS, --number-workers=NUMBER_WORKERS
-                        [Deprecated]the number of worker instances on each
-                        spark worker node
-  -o OUTPUT, --output=OUTPUT
-                        output file
-  --mode=MODE           deployment mode, binary|docker
-  --user=USER           user to deploy
-  --fpi=FPI             feature platform ips
-  
 # for me, the onsite1 is the Center Control Machine, so I pass IPs of onsite2 and onsite3 to fpi arguments
 
-$ ./generate_base_ha_config.py -d ./datavisor -i 10.201.33.67,10.201.34.192,10.201.42.238 -c 5 -m 60g -o base_config.ini --fpi 10.201.34.192,10.201.42.238
+$ ./generate_base_ha_config.py -d /data/datavisor -i 10.201.33.67,10.201.34.192,10.201.42.238 -c 5 -m 60g -o base_config.ini --fpi 10.201.34.192,10.201.42.238
 ```
 
 > All services will run with first ip. Spark slave, hadoop datanode, hbase regionserver and moniter node will run with all ips. We can change the topology manually after we generate the config file.
@@ -100,47 +74,6 @@ $ ./generate_base_ha_config.py -d ./datavisor -i 10.201.33.67,10.201.34.192,10.2
 There would be a *base_config.ini* file generated in the current directory.
 
 ## 5. Bootstrap
-
-I met the some errors when trying to execute the 
-
-`ansible-playbook playbooks/bootstrap.yml --private-key=~/.ssh/id_rsa` (1)
-
-Then **Chaoqun Huang** found that the ansible may not be installed correctly. Then we re-install it by running the following command
-
-```shell
-
-$ ansible --version
-ansible 2.9.6
-  config file = /etc/ansible/ansible.cfg
-  configured module search path = [u'/home/datavisor/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
-  ansible python module location = /usr/lib/python2.7/site-packages/ansible
-  executable location = /usr/bin/ansible
-  python version = 2.7.5 (default, Oct 30 2018, 23:45:53) [GCC 4.8.5 20150623 (Red Hat 4.8.5-36)]
-```
-
-However, after re-install this, I still met error on running code (1), here is the part of outcome:
-
-```shell
-fatal: [10.201.33.67]: FAILED! => {"msg": "The task includes an option with an undefined variable. The error was: 'ansible.vars.hostvars.HostVarsVars object' has no attribute 'ansible_hostname'\n\nThe error appears to be in '/packages/onsite-ansible-docker/roles/bootstrap/tasks/main.yml': line 55, column 3, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n\n- name: Remove 127.0.0.1 mapping to hostname\n  ^ here\n"}
-fatal: [10.201.42.238]: FAILED! => {"msg": "The task includes an option with an undefined variable. The error was: 'ansible.vars.hostvars.HostVarsVars object' has no attribute 'ansible_hostname'\n\nThe error appears to be in '/packages/onsite-ansible-docker/roles/bootstrap/tasks/main.yml': line 55, column 3, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n\n- name: Remove 127.0.0.1 mapping to hostname\n  ^ here\n"}
-
-PLAY RECAP *****************************************************************************
-10.201.33.67   : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=3
-10.201.34.192  : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
-10.201.42.238  : ok=5    changed=1    unreachable=0    failed=1    skipped=0    rescued=0    ignored=3
-```
-
-**According form Chang Liu, it is the hosts file that causes this error, so I checked the host file as following on onsite1**
-
-`vim /etc/hosts`
-
-```
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-10.201.33.67 onsite1
-10.201.34.192 onsite2
-10.201.42.238 onsite3
-```
 
 **Chang** said:
 
@@ -163,81 +96,27 @@ PLAY RECAP *********************************************************************
 >ip2 onsite2
 >ip3 onsite3
 
-So, after I tried to comment first 2 lines, it still failed with same error. Then I just deteled the first two line, and this is what looks like for /etc/hosts
-
-```
-10.201.33.67 onsite1
-10.201.34.192 onsite2
-10.201.42.238 onsite3
-```
-
-*I need to mentioned that I still met some errors on onsite2 machine, so I ssh to it form onsite1 and found there is a file that obviously should not be there under /datavisor. After I deleted it and back to onsite1, re-executed the command, it pops up some different errors*
-
-`ansible-playbook playbooks/bootstrap.yml --private-key=~/.ssh/id_rsa`
+`ansible-playbook playbooks/bootstrap.yml --private-key=~/.ssh/id_rsa
 
 ```shell
-TASK [jdk8 : Set root directory] ************************************************************************************
-ok: [10.201.33.67]
-ok: [10.201.34.192]
-ok: [10.201.42.238]
-Friday 17 April 2020  07:52:42 +0000 (0:00:00.104)       0:00:21.599 **********
-
-TASK [jdk8 : Check if jdk exists] ***********************************************************************************
-ok: [10.201.33.67]
-ok: [10.201.42.238]
-ok: [10.201.34.192]
-Friday 17 April 2020  07:52:44 +0000 (0:00:01.211)       0:00:22.811 **********
-
-TASK [jdk8 : Ensure jdk base dir] ***********************************************************************************
-changed: [10.201.33.67]
-changed: [10.201.34.192]
-changed: [10.201.42.238]
-Friday 17 April 2020  07:52:45 +0000 (0:00:01.054)       0:00:23.866 **********
-
-TASK [jdk8 : Copy jdk to hosts] *************************************************************************************
-fatal: [10.201.33.67]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.26-68394309318502/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
-fatal: [10.201.34.192]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.29-182728417559723/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
-fatal: [10.201.42.238]: FAILED! => {"changed": false, "msg": "Failed to find handler for \"/home/datavisor/.ansible/tmp/ansible-tmp-1587109965.32-147762919821206/source\". Make sure the required command to extract the file is installed. Command \"unzip\" not found. Command \"/usr/bin/gtar\" could not handle archive."}
-
-PLAY RECAP ********************************************************************************************
-10.201.33.67    : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
-10.201.34.192   : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
-10.201.42.238   : ok=17   changed=6    unreachable=0    failed=1    skipped=1    rescued=0    ignored=3
-
-Friday 17 April 2020  07:52:49 +0000 (0:00:04.371)       0:00:28.237 **********
-===============================================================================
-jdk8 : Copy jdk to hosts ---------------------------------------------------------------- 4.37s
-bootstrap : Remove 127.0.0.1 mapping to hostname ---------------------------------------- 3.24s
-bootstrap : Remove ipv6 ::1 mapping to hostname ----------------------------------------- 3.04s
-Gathering Facts ------------------------------------------------------------------------- 2.27s
-bootstrap : Disable firewalld ----------------------------------------------------------- 1.49s
-bootstrap : Disable SElinux ------------------------------------------------------------- 1.41s
-bootstrap : Create user ----------------------------------------------------------------- 1.37s
-bootstrap : Create datavisor dir -------------------------------------------------------- 1.25s
-bootstrap : Create group ---------------------------------------------------------------- 1.23s
-jdk8 : Check if jdk exists -------------------------------------------------------------- 1.21s
-bootstrap : Set DV_DIR environment parameter -------------------------------------------- 1.21s
-bootstrap : Update /etc/security/limits.conf -------------------------------------------- 1.19s
-bootstrap : Disable Enforcement --------------------------------------------------------- 1.17s
-bootstrap : Disable iptables ------------------------------------------------------------ 1.16s
-jdk8 : Ensure jdk base dir -------------------------------------------------------------- 1.05s
-bootstrap : Get hostname by shell ------------------------------------------------------- 1.03s
-jdk8 : Get root directory of the package ------------------------------------------------ 0.32s
-jdk8 : Set root directory --------------------------------------------------------------- 0.10s
-bootstrap : If hostname contains _, will rewrite hostname ------------------------------- 0.10s
-Playbook run took 0 days, 0 hours, 0 minutes, 28 seconds
+PLAY RECAP ***********************************************************************************************
+10.201.33.67   : ok=33   changed=13   unreachable=0    failed=0    skipped=1    rescued=0    ignored=2
+10.201.34.192  : ok=33   changed=13   unreachable=0    failed=0    skipped=1    rescued=0    ignored=3
+10.201.42.238  : ok=33   changed=13   unreachable=0    failed=0    skipped=1    rescued=0    ignored=3
 ```
 
-As the error message says that  <font color=darksalmon>Command \"unzip\" not found.</font>, I install the **unzip** by:
+### Step 6 is same as README.md file, which will run about 15 mins.
+
+### Step 7 Integration tests (optional) cannot execute successfully
+
+### Step 8 is failed too.
+
+<font size=5 color=salmon>Please Remember to clean the env when you finish your practice by running the following commands</font>
 
 ```shell
-$ sudo yum install unzip
-$ which gtar
-/usr/bin/gtar
-$ which unzip
-/usr/bin/unzip
-# however, I still met same error :(
+$ ansible-playbook playbooks/clean_all.yml
+Are you sure you want to clean everything? Answer with 'YES' [NO]: YES
+
+$ sudo yum remove ansible
 ```
-
-
 
