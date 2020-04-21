@@ -4,6 +4,8 @@
 
 ### 																																		--Author: Yixin Huang
 
+**This file is recommended to read by Typora**
+
 ## 1. CONNECT TO THE SERVER
 
 [Introduction slides](https://docs.google.com/presentation/d/1ZjRX0jGhtvvFUkofyI_mGGaSUSlU6-eDZJmGBpMImAo/edit?pli=1#slide=id.g82da3ea189_1_8)
