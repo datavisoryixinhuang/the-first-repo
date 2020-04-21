@@ -107,9 +107,9 @@ PLAY RECAP *********************************************************************
 
 ### Step 6 is same as README.md file, which will run about 15 mins.
 
-### Step 7 Integration tests (optional) cannot execute successfully
+### Step 7 Integration tests (optional) cannot execute successfully (ignore this step.)
 
-### Step 8 is failed too.
+### Step 8 may fail due to the connection error, you can try it later. 
 
 <font size=5 color=salmon>Please Remember to clean the env when you finish your practice by running the following commands</font>
 
@@ -120,3 +120,4 @@ Are you sure you want to clean everything? Answer with 'YES' [NO]: YES
 $ sudo yum remove ansible
 ```
 
+g
