@@ -109,7 +109,7 @@ PLAY RECAP *********************************************************************
 
 ### Step 7 Integration tests (optional) cannot execute successfully (ignore this step.)
 
-### Step 8 may fail due to the connection error, you can try it later. 
+### Step 8 may fail due to the connection/network error, you can try it later. 
 
 <font size=5 color=salmon>Please Remember to clean the env when you finish your practice by running the following commands</font>
 
